@@ -123,7 +123,7 @@ jobs:
             --extra-vars environnement_name=production
             --extra-vars github_token=${{ secrets.GITHUB_TOKEN }}
             --extra-vars app_key=${{ secrets.APP_KEY }}
-            --extra-vars download_url=https://github.com/tech-personnal-repos/val-backend/releases/download/${{ steps.package.outputs.version }}/back.zip
+            --extra-vars download_url=https://github.com/${{ github.repository }}/releases/download/${{ steps.package.outputs.version }}/back.zip
             --extra-vars host=${{ vars.HOST }}
             --extra-vars app_path=${{ vars.APP_PATH }}
             --extra-vars db_host=${{ vars.DB_HOST }}
