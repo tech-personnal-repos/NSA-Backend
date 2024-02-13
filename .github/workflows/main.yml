@@ -57,13 +57,13 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           inventory: |
             [database]
-            $DB_HOST ansible_user=${{ secrets.SSH_USER }}
+            ${{ vars.DB_HOST }} ansible_user=${{ secrets.SSH_USER }}
           options: |
             --extra-vars repository=${{ github.repository }}
             --extra-vars environnement_name=production
             --extra-vars github_token=${{ secrets.GITHUB_TOKEN }}
-            --extra-vars backend_host=$HOST
-            --extra-vars db_database=$DB_DATABASE
+            --extra-vars backend_host=${{ vars.HOST }}
+            --extra-vars db_database=${{ vars.DB_DATABASE }}
 
   build:
     runs-on: ubuntu-latest
@@ -117,17 +117,17 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           inventory: |
             [backend]
-            $HOST ansible_user=${{ secrets.SSH_USER }}
+            ${{ vars.HOST }} ansible_user=${{ secrets.SSH_USER }}
           options: |
             --extra-vars repository=${{ github.repository }}
             --extra-vars environnement_name=production
             --extra-vars github_token=${{ secrets.GITHUB_TOKEN }}
             --extra-vars app_key=${{ secrets.APP_KEY }}
             --extra-vars download_url=https://github.com/tech-personnal-repos/val-backend/releases/download/${{ steps.package.outputs.version }}/back.zip
-            --extra-vars host=$HOST
-            --extra-vars app_path=$APP_PATH
-            --extra-vars db_host=$DB_HOST
+            --extra-vars host=${{ vars.HOST }}
+            --extra-vars app_path=${{ vars.APP_PATH }}
+            --extra-vars db_host=${{ vars.DB_HOST }}
             --extra-vars db_port=${{ secrets.DB_PORT }}
-            --extra-vars db_database=$DB_DATABASE
+            --extra-vars db_database=${{ vars.DB_DATABASE }}
             --extra-vars db_username=${{ secrets.DB_USERNAME }}
             --extra-vars db_password=${{ secrets.DB_PASSWORD }}
