@@ -1,0 +1,103 @@
+- name: Get back build
+  ansible.builtin.get_url:
+    url: "{{ download_url }}"
+    dest: /tmp/back.zip
+
+- name: Ensure tmp directory exists
+  ansible.builtin.file:
+    path: /tmp/back
+    state: directory
+
+- name: Unzip back build
+  ansible.builtin.unarchive:
+    src: /tmp/back.zip
+    dest: "/tmp/back"
+    remote_src: yes
+
+- name: Add .env file
+  copy:
+    src: "./templates/.env.template"
+    dest: "/tmp/back/.env"
+
+- name: Replace variables in .env
+  replace:
+    path: "/tmp/back/.env"
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.value }}"
+  loop:
+    - { regexp: '\$APP_KEY', value: "{{ app_key }}" }
+    - { regexp: '\$HOST', value: "{{ host }}" }
+    - { regexp: '\$DB_HOST', value: "{{ db_host }}" }
+    - { regexp: '\$DB_PORT', value: "{{ db_port }}" }
+    - { regexp: '\$DB_DATABASE', value: "{{ db_database }}" }
+    - { regexp: '\$DB_USERNAME', value: "{{ db_username }}" }
+    - { regexp: '\$DB_PASSWORD', value: "{{ db_password }}" }
+
+- name: Give access to storage
+  ansible.builtin.file:
+    path: "/tmp/back/storage"
+    owner: www-data
+    group: www-data
+    recurse: yes
+
+- name: Generate app_key if not defined
+  ansible.builtin.command: "php artisan key:generate"
+  args:
+    chdir: "/tmp/back"
+  when: app_key == ""
+
+- name: Get generated app_key
+  shell: grep -o 'APP_KEY=.*' /tmp/back/.env | cut -d'=' -f2-
+  register: new_app_key
+  when: app_key == ""
+
+- name: Config cache
+  ansible.builtin.command: "php artisan config:cache"
+  args:
+    chdir: "/tmp/back"
+
+- name: "Run the migrations"
+  shell: "php artisan migrate --force"
+  args:
+    chdir: "/tmp/back"
+
+- name: Remove old back build
+  ansible.builtin.file:
+    path: "{{ app_path }}"
+    state: absent
+
+- name: Move back build
+  ansible.builtin.copy:
+    src: "/tmp/back/"
+    dest: "{{ app_path }}"
+    remote_src: yes
+
+# - name: Remove tmp directory
+#   ansible.builtin.file:
+#     path: "/tmp/back"
+#     state: absent
+
+- name: Remove back zip
+  ansible.builtin.file:
+    path: "/tmp/back.zip"
+    state: absent
+
+- name: exit process if app_key is specified
+  meta: end_host
+  when: app_key != ""
+
+- name: create token file
+  copy:
+    content: "{{ github_token }}"
+    dest: /tmp/github_token
+
+- name: Login to github cli
+  shell: "gh auth login --with-token < /tmp/github_token"
+
+- name: Add app_key var to github secrets
+  shell: "gh secret set APP_KEY -b {{ new_app_key.stdout }} -R {{ repository }} -e {{ environnement_name }}"
+
+- name: Remove token file
+  ansible.builtin.file:
+    path: /tmp/github_token
+    state: absent

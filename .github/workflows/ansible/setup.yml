@@ -1,0 +1,32 @@
+- name: Apt update
+  apt:
+    update_cache: yes
+
+- name: Installing dependencies
+  apt:
+    name: "{{ item }}"
+  loop:
+    - curl
+    - gh
+    - nginx
+    - unzip
+    - php7.4
+    - php7.4-cli
+    - php7.4-mbstring
+    - php7.4-xml
+    - php7.4-curl
+    - php7.4-zip
+    - php7.4-fpm
+    - php7.4-mysql
+  register: installed_dependencies
+
+- name: Remove Apache
+  apt:
+    name: "apache2"
+    state: absent
+  when: installed_dependencies.changed
+
+- name: Setup nginx
+  ansible.builtin.import_tasks:
+    file: ./nginx.yml
+  when: installed_dependencies.changed
