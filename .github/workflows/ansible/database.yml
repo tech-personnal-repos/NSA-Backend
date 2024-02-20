@@ -9,9 +9,9 @@
       apt: name=mariadb-server state=present
       register: mariadb_installed
 
-    # - name: Exit if mariadb is installed
-    #   meta: end_host
-    #   when: not mariadb_installed.changed
+    - name: Exit if mariadb is installed
+      meta: end_host
+      when: not mariadb_installed.changed
 
     - name: Install github client
       apt: name=gh state=present
